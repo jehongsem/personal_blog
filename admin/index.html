@@ -389,7 +389,11 @@
             try {
                 // index.json 로드
                 const indexFile = await getFile('posts/index.json');
-                indexData = indexFile ? indexFile.content : [];
+                if (indexFile && Array.isArray(indexFile.content)) {
+                    indexData = indexFile.content;
+                } else {
+                    indexData = [];
+                }
                 
                 // posts 폴더 파일 목록
                 const res = await githubAPI(`/contents/posts?ref=${BRANCH}`);
@@ -492,13 +496,20 @@
             try {
                 let sha = null;
                 
+                // 항상 최신 index.json 불러오기
+                const indexFile = await getFile('posts/index.json');
+                let currentIndexData = [];
+                if (indexFile && Array.isArray(indexFile.content)) {
+                    currentIndexData = [...indexFile.content];
+                }
+                
                 // 편집 모드에서 파일명이 변경된 경우
                 if (editMode === 'edit' && originalFilename && originalFilename !== filename) {
                     // 기존 파일 삭제
                     await deleteFile(`posts/${originalFilename}`, originalSha, `Rename ${originalFilename} to ${filename}`);
                     
                     // index.json에서 기존 파일명 제거
-                    indexData = indexData.filter(f => f !== originalFilename);
+                    currentIndexData = currentIndexData.filter(f => f !== originalFilename);
                 } else if (editMode === 'edit' && originalSha) {
                     sha = originalSha;
                 }
@@ -508,14 +519,20 @@
                     editMode === 'new' ? `Create ${filename}` : `Update ${filename}`);
                 
                 if (success) {
-                    // index.json 업데이트
-                    if (!indexData.includes(filename)) {
-                        indexData.unshift(filename);
+                    // index.json 업데이트 (새 파일이면 맨 앞에 추가)
+                    if (!currentIndexData.includes(filename)) {
+                        currentIndexData.unshift(filename);
                     }
-                    const indexFile = await getFile('posts/index.json');
-                    await saveFile('posts/index.json', indexData, indexFile?.sha, 'Update index.json');
                     
-                    showToast('저장되었습니다!', 'success');
+                    // 최신 SHA로 다시 불러와서 저장
+                    const latestIndexFile = await getFile('posts/index.json');
+                    const indexSuccess = await saveFile('posts/index.json', currentIndexData, latestIndexFile?.sha, 'Update index.json');
+                    
+                    if (indexSuccess) {
+                        showToast('저장되었습니다!', 'success');
+                    } else {
+                        showToast('포스트는 저장됐지만 index.json 업데이트 실패. 수동으로 추가해주세요.', 'error');
+                    }
                     showPage('posts');
                 } else {
                     showToast('저장에 실패했습니다.', 'error');
@@ -533,10 +550,14 @@
                 const success = await deleteFile(`posts/${filename}`, sha, `Delete ${filename}`);
                 
                 if (success) {
-                    // index.json 업데이트
-                    indexData = indexData.filter(f => f !== filename);
+                    // 항상 최신 index.json 불러오기
                     const indexFile = await getFile('posts/index.json');
-                    await saveFile('posts/index.json', indexData, indexFile?.sha, 'Update index.json');
+                    let currentIndexData = [];
+                    if (indexFile && Array.isArray(indexFile.content)) {
+                        currentIndexData = indexFile.content.filter(f => f !== filename);
+                    }
+                    
+                    await saveFile('posts/index.json', currentIndexData, indexFile?.sha, 'Update index.json');
                     
                     showToast('삭제되었습니다.', 'success');
                     loadPosts();
