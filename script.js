@@ -98,7 +98,38 @@ function renderAbout(about) {
 // === 블로그 포스트 로드 ===
 async function loadPosts() {
     try {
-        // 포스트 파일 목록 (6개)
+        // index.json에서 포스트 목록 가져오기
+        const indexResponse = await fetch('posts/index.json');
+        const postList = await indexResponse.json();
+        
+        // 최신 6개만 로드
+        const recentPostFiles = postList.slice(0, 6);
+        
+        const posts = await Promise.all(
+            recentPostFiles.map(file => 
+                fetch(`posts/${file}`)
+                    .then(res => res.json())
+                    .catch(() => null)
+            )
+        );
+        
+        // null 제거하고 날짜순 정렬
+        const validPosts = posts
+            .filter(post => post !== null)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        renderPosts(validPosts);
+        
+    } catch (error) {
+        console.error('포스트 로드 실패:', error);
+        // index.json 로드 실패시 기존 방식으로 폴백
+        loadPostsFallback();
+    }
+}
+
+// === 폴백: 기존 방식으로 포스트 로드 ===
+async function loadPostsFallback() {
+    try {
         const postFiles = [
             'posts/post-1.json',
             'posts/post-2.json',
@@ -116,15 +147,13 @@ async function loadPosts() {
             )
         );
         
-        // null 제거하고 날짜순 정렬
         const validPosts = posts
             .filter(post => post !== null)
             .sort((a, b) => new Date(b.date) - new Date(a.date));
         
         renderPosts(validPosts);
-        
     } catch (error) {
-        console.error('포스트 로드 실패:', error);
+        console.error('폴백 포스트 로드도 실패:', error);
     }
 }
 
