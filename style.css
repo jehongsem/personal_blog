@@ -350,6 +350,10 @@ img {
     background: #10b981;
 }
 
+.blog-card-category.cat-biz {
+    background: #1e4799;
+}
+
 .blog-card-category.cat-news {
     background: #f59e0b;
 }

@@ -8,14 +8,15 @@ const CONFIG = {
   postsDir: path.join(__dirname, '..', 'posts'),
   indexFile: path.join(__dirname, '..', 'posts', 'index.json'),
   defaultImage: 'images/banner.png',
-  categories: ['IT', 'AI', '교육']
+  categories: ['IT', 'AI', '교육', '경영']
 };
 
 // 카테고리별 검색 키워드
 const SEARCH_QUERIES = {
   'IT': ['IT 기술 트렌드', '소프트웨어 개발', '클라우드 컴퓨팅', '사이버보안', '스타트업 테크'],
   'AI': ['인공지능 AI', 'ChatGPT Claude', '생성형 AI', '머신러닝', 'AI 서비스'],
-  '교육': ['에듀테크', '디지털 교육', 'AI 교육', '미래 교육', '온라인 학습']
+  '교육': ['에듀테크', '디지털 교육', 'AI 교육', '미래 교육', '온라인 학습'],
+  '경영': ['경영 전략', '스타트업 창업', '리더십 경영', 'MZ세대 조직문화', '디지털 트랜스포메이션']
 };
 
 // Google News RSS를 이용한 뉴스 수집
@@ -187,7 +188,8 @@ function generateBasicPost(selectedNews, allNews, category) {
   const categoryEmoji = {
     'IT': '💻',
     'AI': '🤖',
-    '교육': '📚'
+    '교육': '📚',
+    '경영': '💼'
   };
   
   const emoji = categoryEmoji[category] || '📰';

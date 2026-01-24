@@ -47,6 +47,7 @@
                 <button class="filter-btn" data-category="IT">IT</button>
                 <button class="filter-btn" data-category="AI">AI</button>
                 <button class="filter-btn" data-category="교육">교육</button>
+                <button class="filter-btn" data-category="경영">경영</button>
             </div>
 
             <!-- 블로그 그리드 -->
@@ -172,6 +173,7 @@
                 if (post.category === 'IT') catClass = 'cat-it';
                 else if (post.category === 'AI') catClass = 'cat-ai';
                 else if (post.category === '교육') catClass = 'cat-edu';
+                else if (post.category === '경영') catClass = 'cat-biz';
                 
                 return `
                 <a href="post.html?id=${post.id}" class="blog-card fade-in visible">
