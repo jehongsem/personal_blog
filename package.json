@@ -7,8 +7,8 @@
     "test-news": "node scripts/fetch-news.js"
   },
   "dependencies": {
-    "axios": "^1.6.0",
-    "cheerio": "^1.0.0-rc.12"
+    "axios": "^1.13.2",
+    "cheerio": "^1.2.0"
   },
   "author": "재홍샘",
   "license": "MIT"
