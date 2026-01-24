@@ -1,0 +1,41 @@
+name: 매일 자동 블로그 포스팅
+
+on:
+  schedule:
+    # 매일 한국시간 오전 8시에 실행 (UTC 23:00, 전날)
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행도 가능
+
+jobs:
+  generate-daily-post:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install axios cheerio
+
+      - name: Fetch news and create post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/fetch-news.js
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git diff --staged --quiet || git commit -m "✍️ 오늘의 포스트: $(date +'%Y-%m-%d')"
+          git push
+
+    
