@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로딩중... - 재홍샘 블로그</title>
+    <meta name="description" content="재홍샘 블로그 - IT, AI, 교육에 관한 이야기">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header" style="background: var(--white); border-bottom: 1px solid var(--gray-200);">
+        <div class="header-inner">
+            <a href="index.html" class="logo">
+                <span class="logo-text">재홍샘 블로그</span>
+            </a>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">홈</a>
+                <a href="blog.html" class="nav-link active">블로그</a>
+                <a href="index.html#about" class="nav-link">소개</a>
+            </nav>
+            <button class="mobile-menu" aria-label="메뉴">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 포스트 내용 -->
+    <article class="post-detail">
+        <div class="post-hero" id="post-hero">
+            <!-- JS로 렌더링 -->
+        </div>
+        <div class="post-body">
+            <div class="container">
+                <div class="post-content" id="post-content">
+                    <!-- JS로 렌더링 -->
+                </div>
+                <div class="post-nav">
+                    <a href="blog.html" class="btn-back">
+                        ← 목록으로 돌아가기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo-text">재홍샘 블로그</span>
+                    <p>IT · AI · 교육 이야기</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="blog.html">블로그</a>
+                    <a href="index.html#about">소개</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 재홍샘 블로그. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // URL에서 포스트 ID 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+
+        if (postId) {
+            loadPost(postId);
+        } else {
+            window.location.href = 'blog.html';
+        }
+
+        async function loadPost(id) {
+            try {
+                const response = await fetch(`posts/${id}.json`);
+                if (!response.ok) throw new Error('Post not found');
+                const post = await response.json();
+                renderPost(post);
+            } catch (error) {
+                console.error('포스트 로드 실패:', error);
+                document.getElementById('post-content').innerHTML = `
+                    <div class="post-error">
+                        <h2>포스트를 찾을 수 없습니다</h2>
+                        <p>요청하신 포스트가 존재하지 않거나 삭제되었습니다.</p>
+                        <a href="blog.html" class="btn-back">블로그로 돌아가기</a>
+                    </div>
+                `;
+            }
+        }
+
+        function renderPost(post) {
+            // 페이지 제목 변경
+            document.title = `${post.title} - 재홍샘 블로그`;
+
+            // 히어로 영역
+            document.getElementById('post-hero').innerHTML = `
+                <div class="post-hero-bg">
+                    <img src="${post.image}" alt="${post.title}">
+                    <div class="post-hero-overlay"></div>
+                </div>
+                <div class="post-hero-content">
+                    <div class="container">
+                        <span class="post-category">${post.category}</span>
+                        <h1 class="post-title">${post.title}</h1>
+                        <p class="post-date">${formatDate(post.date)}</p>
+                    </div>
+                </div>
+            `;
+
+            // 본문 내용
+            document.getElementById('post-content').innerHTML = post.content;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>블로그 - 재홍샘 블로그</title>
+    <meta name="description" content="재홍샘 블로그 - IT, AI, 교육에 관한 이야기">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header" style="background: var(--white); border-bottom: 1px solid var(--gray-200);">
+        <div class="header-inner">
+            <a href="index.html" class="logo">
+                <span class="logo-text">재홍샘 블로그</span>
+            </a>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">홈</a>
+                <a href="blog.html" class="nav-link active">블로그</a>
+                <a href="index.html#about" class="nav-link">소개</a>
+            </nav>
+            <button class="mobile-menu" aria-label="메뉴">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 페이지 헤더 -->
+    <section class="page-hero">
+        <div class="container">
+            <h1>블로그</h1>
+            <p>IT, AI, 교육에 관한 다양한 이야기를 만나보세요</p>
+        </div>
+    </section>
+
+    <!-- 블로그 목록 -->
+    <section class="blog-page">
+        <div class="container">
+            <!-- 카테고리 필터 -->
+            <div class="blog-filter">
+                <button class="filter-btn active" data-category="all">전체</button>
+                <button class="filter-btn" data-category="IT">IT</button>
+                <button class="filter-btn" data-category="AI">AI</button>
+                <button class="filter-btn" data-category="교육">교육</button>
+            </div>
+
+            <!-- 블로그 그리드 -->
+            <div class="blog-grid" id="blog-grid-all">
+                <!-- JS로 렌더링 -->
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination" id="pagination">
+                <!-- JS로 렌더링 -->
+            </div>
+
+            <!-- 빈 상태 -->
+            <div class="blog-empty" id="blog-empty" style="display: none;">
+                <p>해당 카테고리에 포스트가 없습니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo-text">재홍샘 블로그</span>
+                    <p>IT · AI · 교육 이야기</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="blog.html">블로그</a>
+                    <a href="index.html#about">소개</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 재홍샘 블로그. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        const POSTS_PER_PAGE = 6;
+        let allPosts = [];
+        let filteredPosts = [];
+        let currentPage = 1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllPosts();
+            initFilter();
+        });
+
+        async function loadAllPosts() {
+            try {
+                const indexResponse = await fetch('posts/index.json');
+                const postList = await indexResponse.json();
+                
+                const posts = await Promise.all(
+                    postList.map(file => 
+                        fetch(`posts/${file}`)
+                            .then(res => res.json())
+                            .catch(() => null)
+                    )
+                );
+                
+                allPosts = posts
+                    .filter(post => post !== null)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                filteredPosts = [...allPosts];
+                renderPage(1);
+                
+            } catch (error) {
+                console.error('포스트 로드 실패:', error);
+                loadPostsFallback();
+            }
+        }
+
+        async function loadPostsFallback() {
+            const postFiles = [];
+            for (let i = 1; i <= 50; i++) {
+                postFiles.push(`posts/post-${i}.json`);
+            }
+            
+            const posts = await Promise.all(
+                postFiles.map(file => 
+                    fetch(file)
+                        .then(res => res.json())
+                        .catch(() => null)
+                )
+            );
+            
+            allPosts = posts
+                .filter(post => post !== null)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            filteredPosts = [...allPosts];
+            renderPage(1);
+        }
+
+        function renderPage(page) {
+            currentPage = page;
+            const grid = document.getElementById('blog-grid-all');
+            const empty = document.getElementById('blog-empty');
+            
+            if (filteredPosts.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            
+            const startIndex = (page - 1) * POSTS_PER_PAGE;
+            const endIndex = startIndex + POSTS_PER_PAGE;
+            const pagePosts = filteredPosts.slice(startIndex, endIndex);
+            
+            // 카드 클릭시 상세 페이지로 이동
+            grid.innerHTML = pagePosts.map(post => {
+                // 카테고리별 색상 클래스
+                let catClass = '';
+                if (post.category === 'IT') catClass = 'cat-it';
+                else if (post.category === 'AI') catClass = 'cat-ai';
+                else if (post.category === '교육') catClass = 'cat-edu';
+                
+                return `
+                <a href="post.html?id=${post.id}" class="blog-card fade-in visible">
+                    <div class="blog-card-image">
+                        <img src="${post.image}" alt="${post.title}">
+                        <span class="blog-card-category ${catClass}">${post.category}</span>
+                    </div>
+                    <div class="blog-card-content">
+                        <p class="blog-card-date">${formatDate(post.date)}</p>
+                        <h3 class="blog-card-title">${post.title}</h3>
+                        <p class="blog-card-excerpt">${post.excerpt}</p>
+                    </div>
+                </a>
+            `}).join('');
+            
+            renderPagination();
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            if (currentPage > 1) {
+                html += `<button class="page-btn page-prev" onclick="renderPage(${currentPage - 1})">‹</button>`;
+            }
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    html += `<button class="page-btn active">${i}</button>`;
+                } else {
+                    html += `<button class="page-btn" onclick="renderPage(${i})">${i}</button>`;
+                }
+            }
+            
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn page-next" onclick="renderPage(${currentPage + 1})">›</button>`;
+            }
+            
+            pagination.innerHTML = html;
+        }
+
+        function initFilter() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const category = btn.dataset.category;
+                    
+                    if (category === 'all') {
+                        filteredPosts = [...allPosts];
+                    } else {
+                        filteredPosts = allPosts.filter(post => post.category === category);
+                    }
+                    
+                    renderPage(1);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

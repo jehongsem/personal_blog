@@ -1,0 +1,64 @@
+{
+  "site": {
+    "title": "재홍샘 블로그",
+    "description": "IT, AI, 교육에 관한 이야기"
+  },
+  "hero": {
+    "backgroundImage": "images/banner.png",
+    "subtitle": "IT · AI · 교육 이야기",
+    "title": "재홍샘 블로그",
+    "buttons": [
+      {
+        "text": "블로그 보기",
+        "url": "blog.html",
+        "style": "primary"
+      },
+      {
+        "text": "소개",
+        "url": "#about",
+        "style": "secondary"
+      }
+    ]
+  },
+  "blog": {
+    "sectionTitle": "최근 포스트",
+    "sectionSubtitle": "IT, AI, 교육에 관한 다양한 이야기를 만나보세요"
+  },
+  "about": {
+    "sectionTitle": "소개",
+    "sectionSubtitle": "재홍샘 블로그를 소개합니다",
+    "intro": {
+      "title": "안녕하세요, 재홍샘입니다",
+      "description": "IT와 AI 기술의 발전, 그리고 교육 현장의 변화에 관심을 가지고 있습니다. 이 블로그에서는 최신 기술 동향과 교육적 활용 방안, 그리고 일상 속 디지털 경험들을 나눕니다.",
+      "image": "images/banner.png"
+    },
+    "features": [
+      {
+        "icon": "💻",
+        "title": "IT 기술",
+        "description": "웹개발, 프로그래밍, 최신 IT 트렌드와 실용적인 기술 정보를 공유합니다."
+      },
+      {
+        "icon": "🤖",
+        "title": "인공지능",
+        "description": "AI 서비스 활용법, 프롬프트 엔지니어링, 생성형 AI 소식을 다룹니다."
+      },
+      {
+        "icon": "📚",
+        "title": "교육",
+        "description": "에듀테크, 디지털 리터러시, 미래 교육에 대한 생각을 나눕니다."
+      },
+      {
+        "icon": "💡",
+        "title": "인사이트",
+        "description": "기술과 교육이 만나는 지점에서의 경험과 인사이트를 공유합니다."
+      }
+    ],
+    "departments": []
+  },
+  "footer": {
+    "address": "IT · AI · 교육 이야기",
+    "email": "",
+    "copyright": "© 2025 재홍샘 블로그. All rights reserved."
+  }
+}
