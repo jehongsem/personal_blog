@@ -152,6 +152,10 @@ async function generateBlogPostWithClaude(selectedNews, allNews, category) {
         role: 'user',
         content: `당신은 IT/AI/교육 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
 
+## 중요: 현재 날짜
+오늘은 ${new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}입니다. 
+반드시 2026년 현재 시점을 기준으로 작성하세요. 2024년, 2025년 등 과거 시제로 작성하지 마세요.
+
 ## 오늘의 주요 뉴스
 제목: ${selectedNews.title}
 출처: ${selectedNews.source}
@@ -163,7 +167,8 @@ ${relatedNews}
 ## 작성 요청사항
 1. 위 뉴스를 바탕으로 "${category}" 카테고리에 맞는 블로그 포스트를 작성해주세요.
 2. 단순 뉴스 전달이 아닌, 독자에게 인사이트를 주는 분석 글로 작성해주세요.
-3. 다음 구조로 작성해주세요:
+3. 반드시 2026년 현재 시점에서 작성하세요. "2025년에는~", "작년에~" 같은 과거 표현을 사용하지 마세요.
+4. 다음 구조로 작성해주세요:
    - 도입부: 왜 이 주제가 중요한지
    - 본문: 핵심 내용 설명 및 분석
    - 시사점: 독자들이 알아야 할 점, 앞으로의 전망
