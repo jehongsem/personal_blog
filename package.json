@@ -7,7 +7,7 @@
     "test-news": "node scripts/fetch-news.js"
   },
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^1.13.3",
     "cheerio": "^1.2.0"
   },
   "author": "재홍샘",
