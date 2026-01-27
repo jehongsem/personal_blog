@@ -1,291 +1,275 @@
-const axios = require(‘axios’);
-const cheerio = require(‘cheerio’);
-const fs = require(‘fs’);
-const path = require(‘path’);
+const axios = require('axios');
+const cheerio = require('cheerio');
+const fs = require('fs');
+const path = require('path');
 
 // 설정
 const CONFIG = {
-postsDir: path.join(__dirname, ‘..’, ‘posts’),
-indexFile: path.join(__dirname, ‘..’, ‘posts’, ‘index.json’),
-defaultImage: ‘images/banner.png’,
-categories: [‘IT’, ‘AI’, ‘교육’, ‘경영’]
+  postsDir: path.join(__dirname, '..', 'posts'),
+  indexFile: path.join(__dirname, '..', 'posts', 'index.json'),
+  defaultImage: 'images/banner.png',
+  categories: ['IT', 'AI', '교육', '경영']
 };
 
 // 카테고리별 검색 키워드
 const SEARCH_QUERIES = {
-‘IT’: [‘IT 기술 트렌드’, ‘소프트웨어 개발’, ‘클라우드 컴퓨팅’, ‘사이버보안’, ‘스타트업 테크’],
-‘AI’: [‘인공지능 AI’, ‘ChatGPT Claude’, ‘생성형 AI’, ‘머신러닝’, ‘AI 서비스’],
-‘교육’: [‘에듀테크’, ‘디지털 교육’, ‘AI 교육’, ‘미래 교육’, ‘온라인 학습’],
-‘경영’: [‘경영 전략’, ‘스타트업 창업’, ‘리더십 경영’, ‘MZ세대 조직문화’, ‘디지털 트랜스포메이션’]
+  'IT': ['IT 기술 트렌드', '소프트웨어 개발', '클라우드 컴퓨팅', '사이버보안', '스타트업 테크'],
+  'AI': ['인공지능 AI', 'ChatGPT Claude', '생성형 AI', '머신러닝', 'AI 서비스'],
+  '교육': ['에듀테크', '디지털 교육', 'AI 교육', '미래 교육', '온라인 학습'],
+  '경영': ['경영 전략', '스타트업 창업', '리더십 경영', 'MZ세대 조직문화', '디지털 트랜스포메이션']
 };
 
 // 카테고리별 Pexels 검색어 (영문)
 const PEXELS_KEYWORDS = {
-‘IT’: [‘technology’, ‘computer’, ‘coding’, ‘software’, ‘programming’],
-‘AI’: [‘artificial intelligence’, ‘robot’, ‘futuristic’, ‘data’, ‘network’],
-‘교육’: [‘education’, ‘learning’, ‘classroom’, ‘study’, ‘books’],
-‘경영’: [‘business’, ‘office’, ‘leadership’, ‘startup’, ‘meeting’]
+  'IT': ['technology', 'computer', 'coding', 'software', 'programming'],
+  'AI': ['artificial intelligence', 'robot', 'futuristic', 'data', 'network'],
+  '교육': ['education', 'learning', 'classroom', 'study', 'books'],
+  '경영': ['business', 'office', 'leadership', 'startup', 'meeting']
 };
 
 // Google News RSS를 이용한 뉴스 수집
 async function fetchGoogleNews(query) {
-try {
-const encodedQuery = encodeURIComponent(query);
-const url = `https://news.google.com/rss/search?q=${encodedQuery}&hl=ko&gl=KR&ceid=KR:ko`;
+  try {
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://news.google.com/rss/search?q=${encodedQuery}&hl=ko&gl=KR&ceid=KR:ko`;
 
-```
-const response = await axios.get(url, {
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-  },
-  timeout: 10000
-});
-
-const $ = cheerio.load(response.data, { xmlMode: true });
-const items = [];
-
-$('item').slice(0, 10).each((i, el) => {
-  const title = $(el).find('title').text().trim();
-  const link = $(el).find('link').text().trim();
-  const pubDate = $(el).find('pubDate').text().trim();
-  const source = $(el).find('source').text().trim();
-  const description = $(el).find('description').text().trim();
-
-  if (title && link) {
-    items.push({
-      title,
-      link,
-      pubDate,
-      source,
-      description
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 10000
     });
+
+    const $ = cheerio.load(response.data, { xmlMode: true });
+    const items = [];
+
+    $('item').slice(0, 10).each((i, el) => {
+      const title = $(el).find('title').text().trim();
+      const link = $(el).find('link').text().trim();
+      const pubDate = $(el).find('pubDate').text().trim();
+      const source = $(el).find('source').text().trim();
+      const description = $(el).find('description').text().trim();
+
+      if (title && link) {
+        items.push({
+          title,
+          link,
+          pubDate,
+          source,
+          description
+        });
+      }
+    });
+
+    return items;
+  } catch (error) {
+    console.error(`Google News 수집 실패 (${query}):`, error.message);
+    return [];
   }
-});
-
-return items;
-```
-
-} catch (error) {
-console.error(`Google News 수집 실패 (${query}):`, error.message);
-return [];
-}
 }
 
 // Pexels API를 이용한 이미지 가져오기
 async function fetchPexelsImage(category) {
-const apiKey = process.env.PEXELS_API_KEY;
+  const apiKey = process.env.PEXELS_API_KEY;
 
-if (!apiKey) {
-console.log(‘PEXELS_API_KEY가 설정되지 않았습니다. 기본 이미지를 사용합니다.’);
-return null;
-}
+  if (!apiKey) {
+    console.log('PEXELS_API_KEY가 설정되지 않았습니다. 기본 이미지를 사용합니다.');
+    return null;
+  }
 
-try {
-const keywords = PEXELS_KEYWORDS[category] || [‘technology’];
-const keyword = keywords[Math.floor(Math.random() * keywords.length)];
+  try {
+    const keywords = PEXELS_KEYWORDS[category] || ['technology'];
+    const keyword = keywords[Math.floor(Math.random() * keywords.length)];
 
-```
-const response = await axios.get('https://api.pexels.com/v1/search', {
-  params: {
-    query: keyword,
-    per_page: 15,
-    orientation: 'landscape'
-  },
-  headers: {
-    'Authorization': apiKey
-  },
-  timeout: 10000
-});
+    const response = await axios.get('https://api.pexels.com/v1/search', {
+      params: {
+        query: keyword,
+        per_page: 15,
+        orientation: 'landscape'
+      },
+      headers: {
+        'Authorization': apiKey
+      },
+      timeout: 10000
+    });
 
-const photos = response.data.photos;
+    const photos = response.data.photos;
 
-if (photos && photos.length > 0) {
-  const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
-  const imageUrl = randomPhoto.src.large2x || randomPhoto.src.large || randomPhoto.src.original;
-  const photographer = randomPhoto.photographer;
-  const photographerUrl = randomPhoto.photographer_url;
+    if (photos && photos.length > 0) {
+      const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
+      const imageUrl = randomPhoto.src.large2x || randomPhoto.src.large || randomPhoto.src.original;
+      const photographer = randomPhoto.photographer;
+      const photographerUrl = randomPhoto.photographer_url;
 
-  console.log(`Pexels 이미지 가져오기 성공: ${keyword}`);
-  console.log(`사진작가: ${photographer}`);
+      console.log(`Pexels 이미지 가져오기 성공: ${keyword}`);
+      console.log(`사진작가: ${photographer}`);
 
-  return {
-    url: imageUrl,
-    photographer: photographer,
-    photographerUrl: photographerUrl
-  };
-}
+      return {
+        url: imageUrl,
+        photographer: photographer,
+        photographerUrl: photographerUrl
+      };
+    }
 
-return null;
-```
-
-} catch (error) {
-console.error(‘Pexels 이미지 가져오기 실패:’, error.message);
-return null;
-}
+    return null;
+  } catch (error) {
+    console.error('Pexels 이미지 가져오기 실패:', error.message);
+    return null;
+  }
 }
 
 // 오늘의 카테고리 선택 (날짜 기반 로테이션)
 function getTodayCategory() {
-const today = new Date();
-const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-const categories = CONFIG.categories;
-return categories[dayOfYear % categories.length];
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+  const categories = CONFIG.categories;
+  return categories[dayOfYear % categories.length];
 }
 
 // 랜덤 검색어 선택
 function getRandomQuery(category) {
-const queries = SEARCH_QUERIES[category];
-return queries[Math.floor(Math.random() * queries.length)];
+  const queries = SEARCH_QUERIES[category];
+  return queries[Math.floor(Math.random() * queries.length)];
 }
 
 // 가장 흥미로운 뉴스 선택
 function selectBestNews(newsItems) {
-if (newsItems.length === 0) return null;
+  if (newsItems.length === 0) return null;
 
-const scored = newsItems.map(item => {
-let score = 0;
-if (item.title.length > 20 && item.title.length < 80) score += 10;
-if (/\d/.test(item.title)) score += 5;
-if (/[”’]/.test(item.title)) score += 3;
-return { …item, score };
-});
+  const scored = newsItems.map(item => {
+    let score = 0;
+    if (item.title.length > 20 && item.title.length < 80) score += 10;
+    if (/\d/.test(item.title)) score += 5;
+    if (/["']/.test(item.title)) score += 3;
+    return { ...item, score };
+  });
 
-scored.sort((a, b) => b.score - a.score);
-return scored[0];
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0];
 }
 
 // Claude API를 이용한 블로그 포스트 생성
 async function generateBlogPostWithClaude(selectedNews, allNews, category, photoCredit) {
-const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
-if (!apiKey) {
-console.log(‘ANTHROPIC_API_KEY가 설정되지 않았습니다. 기본 포맷으로 생성합니다.’);
-return generateBasicPost(selectedNews, allNews, category, photoCredit);
-}
+  if (!apiKey) {
+    console.log('ANTHROPIC_API_KEY가 설정되지 않았습니다. 기본 포맷으로 생성합니다.');
+    return generateBasicPost(selectedNews, allNews, category, photoCredit);
+  }
 
-try {
-const relatedNews = allNews.slice(0, 5).map((item, i) =>
-`${i + 1}. ${item.title} (${item.source})\n   ${item.link}`
-).join(’\n’);
+  try {
+    const relatedNews = allNews.slice(0, 5).map((item, i) =>
+      `${i + 1}. ${item.title} (${item.source})\n   ${item.link}`
+    ).join('\n');
 
-```
-const currentDate = new Date().toLocaleDateString('ko-KR', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-});
+    const currentDate = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
 
-const prompt = `당신은 IT/AI/교육 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
-```
+    const prompt = `당신은 IT/AI/교육 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
 
 ## 중요: 현재 날짜
-
 오늘은 ${currentDate}입니다.
 반드시 2026년 현재 시점을 기준으로 작성하세요. 2024년, 2025년 등 과거 시제로 작성하지 마세요.
 
 ## 오늘의 주요 뉴스
-
 제목: ${selectedNews.title}
 출처: ${selectedNews.source}
 링크: ${selectedNews.link}
 
 ## 관련 뉴스
-
 ${relatedNews}
 
 ## 작성 요청사항
-
-1. 위 뉴스를 바탕으로 “${category}” 카테고리에 맞는 블로그 포스트를 작성해주세요.
-1. 단순 뉴스 전달이 아닌, 독자에게 인사이트를 주는 분석 글로 작성해주세요.
-1. 반드시 2026년 현재 시점에서 작성하세요.
-1. 다음 구조로 작성해주세요:
-- 도입부: 왜 이 주제가 중요한지
-- 본문: 핵심 내용 설명 및 분석
-- 시사점: 독자들이 알아야 할 점, 앞으로의 전망
-1. 원문 뉴스 링크를 본문 중간이나 끝에 자연스럽게 포함해주세요.
-1. 친근하지만 전문적인 문체로 작성해주세요.
-1. HTML 형식으로 작성해주세요 (h2, h3, p, a, blockquote 태그 사용).
-1. 전체 길이는 800~1200자 정도로 작성해주세요.
+1. 위 뉴스를 바탕으로 "${category}" 카테고리에 맞는 블로그 포스트를 작성해주세요.
+2. 단순 뉴스 전달이 아닌, 독자에게 인사이트를 주는 분석 글로 작성해주세요.
+3. 반드시 2026년 현재 시점에서 작성하세요.
+4. 다음 구조로 작성해주세요:
+   - 도입부: 왜 이 주제가 중요한지
+   - 본문: 핵심 내용 설명 및 분석
+   - 시사점: 독자들이 알아야 할 점, 앞으로의 전망
+5. 원문 뉴스 링크를 본문 중간이나 끝에 자연스럽게 포함해주세요.
+6. 친근하지만 전문적인 문체로 작성해주세요.
+7. HTML 형식으로 작성해주세요 (h2, h3, p, a, blockquote 태그 사용).
+8. 전체 길이는 800~1200자 정도로 작성해주세요.
 
 ## 출력 형식
-
 아래 JSON 형식으로만 출력하세요. 다른 설명은 하지 마세요.
 
 {
-“title”: “포스트 제목 (흥미롭고 클릭하고 싶은 제목)”,
-“excerpt”: “포스트 요약 (1~2문장)”,
-“content”: “<h2>…</h2><p>…</p>…”
+  "title": "포스트 제목 (흥미롭고 클릭하고 싶은 제목)",
+  "excerpt": "포스트 요약 (1~2문장)",
+  "content": "<h2>...</h2><p>...</p>..."
 }`;
 
-```
-const response = await axios.post('https://api.anthropic.com/v1/messages', {
-  model: 'claude-sonnet-4-20250514',
-  max_tokens: 3000,
-  messages: [{
-    role: 'user',
-    content: prompt
-  }]
-}, {
-  headers: {
-    'Content-Type': 'application/json',
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01'
-  },
-  timeout: 60000
-});
+    const response = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      timeout: 60000
+    });
 
-const responseText = response.data.content[0].text;
+    const responseText = response.data.content[0].text;
 
-try {
-  let jsonStr = responseText;
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[0];
+    try {
+      let jsonStr = responseText;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+
+      const parsed = JSON.parse(jsonStr);
+
+      let creditHtml = '';
+      if (photoCredit) {
+        creditHtml = `\n\n<p class="photo-credit">📷 Photo by <a href="${photoCredit.photographerUrl}" target="_blank">${photoCredit.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a></p>`;
+      }
+
+      return {
+        title: parsed.title || selectedNews.title,
+        excerpt: parsed.excerpt || `${category} 분야의 최신 소식을 분석합니다.`,
+        content: (parsed.content || generateBasicPost(selectedNews, allNews, category, photoCredit).content) +
+          creditHtml +
+          '\n\n<p class="ai-disclaimer">🤖 <em>이 포스팅은 AI가 자동으로 작성한 포스팅입니다.</em></p>'
+      };
+    } catch (parseError) {
+      console.error('JSON 파싱 실패, 기본 포맷 사용:', parseError.message);
+      return generateBasicPost(selectedNews, allNews, category, photoCredit);
+    }
+  } catch (error) {
+    console.error('Claude API 호출 실패:', error.message);
+    return generateBasicPost(selectedNews, allNews, category, photoCredit);
   }
+}
 
-  const parsed = JSON.parse(jsonStr);
+// Claude API 없을 때 기본 포스트 생성
+function generateBasicPost(selectedNews, allNews, category, photoCredit) {
+  const categoryEmoji = {
+    'IT': '💻',
+    'AI': '🤖',
+    '교육': '📚',
+    '경영': '💼'
+  };
+
+  const emoji = categoryEmoji[category] || '📰';
 
   let creditHtml = '';
   if (photoCredit) {
     creditHtml = `\n\n<p class="photo-credit">📷 Photo by <a href="${photoCredit.photographerUrl}" target="_blank">${photoCredit.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a></p>`;
   }
 
-  return {
-    title: parsed.title || selectedNews.title,
-    excerpt: parsed.excerpt || `${category} 분야의 최신 소식을 분석합니다.`,
-    content: (parsed.content || generateBasicPost(selectedNews, allNews, category, photoCredit).content) +
-      creditHtml +
-      '\n\n<p class="ai-disclaimer">🤖 <em>이 포스팅은 AI가 자동으로 작성한 포스팅입니다.</em></p>'
-  };
-} catch (parseError) {
-  console.error('JSON 파싱 실패, 기본 포맷 사용:', parseError.message);
-  return generateBasicPost(selectedNews, allNews, category, photoCredit);
-}
-```
-
-} catch (error) {
-console.error(‘Claude API 호출 실패:’, error.message);
-return generateBasicPost(selectedNews, allNews, category, photoCredit);
-}
-}
-
-// Claude API 없을 때 기본 포스트 생성
-function generateBasicPost(selectedNews, allNews, category, photoCredit) {
-const categoryEmoji = {
-‘IT’: ‘💻’,
-‘AI’: ‘🤖’,
-‘교육’: ‘📚’,
-‘경영’: ‘💼’
-};
-
-const emoji = categoryEmoji[category] || ‘📰’;
-
-let creditHtml = ‘’;
-if (photoCredit) {
-creditHtml = `\n\n<p class="photo-credit">📷 Photo by <a href="${photoCredit.photographerUrl}" target="_blank">${photoCredit.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a></p>`;
-}
-
-const content = `<h2>${emoji} ${selectedNews.title}</h2>
+  const content = `<h2>${emoji} ${selectedNews.title}</h2>
 
 <p>오늘 ${category} 분야에서 주목할 만한 소식이 있어 공유합니다.</p>
 
@@ -312,129 +296,129 @@ ${allNews.slice(1, 4).map(news =>
 ${creditHtml}
 <p class="ai-disclaimer">🤖 <em>이 포스팅은 AI가 자동으로 작성한 포스팅입니다.</em></p>`;
 
-return {
-title: `${emoji} ${selectedNews.title}`,
-excerpt: `${category} 분야 주요 소식: ${selectedNews.title.substring(0, 50)}...`,
-content: content
-};
+  return {
+    title: `${emoji} ${selectedNews.title}`,
+    excerpt: `${category} 분야 주요 소식: ${selectedNews.title.substring(0, 50)}...`,
+    content: content
+  };
 }
 
 // 오늘 날짜로 이미 포스트가 있는지 확인
 function hasPostForToday() {
-const today = new Date().toISOString().split(‘T’)[0];
-const files = fs.readdirSync(CONFIG.postsDir);
+  const today = new Date().toISOString().split('T')[0];
+  const files = fs.readdirSync(CONFIG.postsDir);
 
-for (const file of files) {
-if (file.endsWith(’.json’) && file !== ‘index.json’) {
-try {
-const content = JSON.parse(fs.readFileSync(path.join(CONFIG.postsDir, file), ‘utf8’));
-if (content.date === today && content.autoGenerated) {
-return true;
-}
-} catch (e) {
-continue;
-}
-}
-}
-return false;
+  for (const file of files) {
+    if (file.endsWith('.json') && file !== 'index.json') {
+      try {
+        const content = JSON.parse(fs.readFileSync(path.join(CONFIG.postsDir, file), 'utf8'));
+        if (content.date === today && content.autoGenerated) {
+          return true;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+  return false;
 }
 
 // index.json 업데이트
 function updatePostIndex(newPostFilename) {
-let index = [];
+  let index = [];
 
-try {
-index = JSON.parse(fs.readFileSync(CONFIG.indexFile, ‘utf8’));
-} catch (e) {
-console.log(‘index.json을 새로 생성합니다.’);
-}
+  try {
+    index = JSON.parse(fs.readFileSync(CONFIG.indexFile, 'utf8'));
+  } catch (e) {
+    console.log('index.json을 새로 생성합니다.');
+  }
 
-if (!index.includes(newPostFilename)) {
-index.unshift(newPostFilename);
-}
+  if (!index.includes(newPostFilename)) {
+    index.unshift(newPostFilename);
+  }
 
-fs.writeFileSync(CONFIG.indexFile, JSON.stringify(index, null, 2));
-console.log(‘index.json 업데이트 완료’);
+  fs.writeFileSync(CONFIG.indexFile, JSON.stringify(index, null, 2));
+  console.log('index.json 업데이트 완료');
 }
 
 // 메인 함수
 async function main() {
-console.log(’=== 일일 블로그 포스트 자동 생성 시작 ===’);
-console.log(`실행 시간: ${new Date().toISOString()}`);
+  console.log('=== 일일 블로그 포스트 자동 생성 시작 ===');
+  console.log(`실행 시간: ${new Date().toISOString()}`);
 
-if (hasPostForToday()) {
-console.log(‘오늘은 이미 자동 포스트가 있습니다. 스킵합니다.’);
-return;
-}
+  if (hasPostForToday()) {
+    console.log('오늘은 이미 자동 포스트가 있습니다. 스킵합니다.');
+    return;
+  }
 
-const category = getTodayCategory();
-const searchQuery = getRandomQuery(category);
-console.log(`\n오늘의 카테고리: ${category}`);
-console.log(`검색어: ${searchQuery}`);
+  const category = getTodayCategory();
+  const searchQuery = getRandomQuery(category);
+  console.log(`\n오늘의 카테고리: ${category}`);
+  console.log(`검색어: ${searchQuery}`);
 
-console.log(’\n뉴스 수집 중…’);
-let news = await fetchGoogleNews(searchQuery);
-console.log(`${news.length}개 뉴스 수집 완료`);
+  console.log('\n뉴스 수집 중...');
+  let news = await fetchGoogleNews(searchQuery);
+  console.log(`${news.length}개 뉴스 수집 완료`);
 
-if (news.length === 0) {
-console.log(‘수집된 뉴스가 없습니다. 다른 검색어로 재시도…’);
-const fallbackQuery = SEARCH_QUERIES[category][0];
-const fallbackNews = await fetchGoogleNews(fallbackQuery);
-if (fallbackNews.length === 0) {
-console.log(‘뉴스 수집 실패. 종료합니다.’);
-return;
-}
-news.push(…fallbackNews);
-}
+  if (news.length === 0) {
+    console.log('수집된 뉴스가 없습니다. 다른 검색어로 재시도...');
+    const fallbackQuery = SEARCH_QUERIES[category][0];
+    const fallbackNews = await fetchGoogleNews(fallbackQuery);
+    if (fallbackNews.length === 0) {
+      console.log('뉴스 수집 실패. 종료합니다.');
+      return;
+    }
+    news.push(...fallbackNews);
+  }
 
-const selectedNews = selectBestNews(news);
-console.log(`\n선택된 주요 뉴스: ${selectedNews.title}`);
+  const selectedNews = selectBestNews(news);
+  console.log(`\n선택된 주요 뉴스: ${selectedNews.title}`);
 
-console.log(’\n이미지 가져오는 중…’);
-const pexelsResult = await fetchPexelsImage(category);
-const postImage = pexelsResult ? pexelsResult.url : CONFIG.defaultImage;
-console.log(`이미지: ${postImage}`);
+  console.log('\n이미지 가져오는 중...');
+  const pexelsResult = await fetchPexelsImage(category);
+  const postImage = pexelsResult ? pexelsResult.url : CONFIG.defaultImage;
+  console.log(`이미지: ${postImage}`);
 
-console.log(’\n블로그 포스트 생성 중…’);
-const postData = await generateBlogPostWithClaude(selectedNews, news, category, pexelsResult);
+  console.log('\n블로그 포스트 생성 중...');
+  const postData = await generateBlogPostWithClaude(selectedNews, news, category, pexelsResult);
 
-const today = new Date();
-const dateStr = today.toISOString().split(‘T’)[0];
-const postId = `daily-${dateStr}`;
-const filename = `${postId}.json`;
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  const postId = `daily-${dateStr}`;
+  const filename = `${postId}.json`;
 
-const post = {
-id: postId,
-title: postData.title,
-category: category,
-date: dateStr,
-image: postImage,
-excerpt: postData.excerpt,
-content: postData.content,
-autoGenerated: true,
-sourceNews: {
-title: selectedNews.title,
-link: selectedNews.link,
-source: selectedNews.source
-}
-};
+  const post = {
+    id: postId,
+    title: postData.title,
+    category: category,
+    date: dateStr,
+    image: postImage,
+    excerpt: postData.excerpt,
+    content: postData.content,
+    autoGenerated: true,
+    sourceNews: {
+      title: selectedNews.title,
+      link: selectedNews.link,
+      source: selectedNews.source
+    }
+  };
 
-if (pexelsResult) {
-post.photoCredit = {
-photographer: pexelsResult.photographer,
-photographerUrl: pexelsResult.photographerUrl,
-source: ‘Pexels’
-};
-}
+  if (pexelsResult) {
+    post.photoCredit = {
+      photographer: pexelsResult.photographer,
+      photographerUrl: pexelsResult.photographerUrl,
+      source: 'Pexels'
+    };
+  }
 
-const filePath = path.join(CONFIG.postsDir, filename);
-fs.writeFileSync(filePath, JSON.stringify(post, null, 2), ‘utf8’);
-console.log(`\n포스트 저장: ${filePath}`);
-console.log(`제목: ${post.title}`);
+  const filePath = path.join(CONFIG.postsDir, filename);
+  fs.writeFileSync(filePath, JSON.stringify(post, null, 2), 'utf8');
+  console.log(`\n포스트 저장: ${filePath}`);
+  console.log(`제목: ${post.title}`);
 
-updatePostIndex(filename);
+  updatePostIndex(filename);
 
-console.log(’\n=== 자동 포스팅 완료 ===’);
+  console.log('\n=== 자동 포스팅 완료 ===');
 }
 
 main().catch(console.error);
