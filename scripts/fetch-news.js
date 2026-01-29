@@ -346,11 +346,7 @@ async function main() {
   console.log('=== 일일 블로그 포스트 자동 생성 시작 ===');
   console.log(`실행 시간: ${new Date().toISOString()}`);
 
-  if (hasPostForToday()) {
-    console.log('오늘은 이미 자동 포스트가 있습니다. 스킵합니다.');
-    return;
-  }
-
+  
   const category = getTodayCategory();
   const searchQuery = getRandomQuery(category);
   console.log(`\n오늘의 카테고리: ${category}`);
