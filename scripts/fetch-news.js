@@ -380,7 +380,8 @@ async function main() {
 
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
-  const postId = `daily-${dateStr}`;
+  const timeStr = today.toTimeString().split(' ')[0].replace(/:/g, '-'); 
+  const postId = `daily-${dateStr}-${timeStr}`;
   const filename = `${postId}.json`;
 
   const post = {
