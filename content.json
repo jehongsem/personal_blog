@@ -17,6 +17,11 @@
         "text": "소개",
         "url": "#about",
         "style": "secondary"
+      },
+      {
+        "text": "블로그 AI 챗봇",
+        "url": "https://test-blog-ai.streamlit.app/",
+        "style": "chatbot"
       }
     ]
   },

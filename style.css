@@ -1,5 +1,5 @@
 /* ===================================================
-   재홍샘 블로그 - 파스텔 그라데이션 테마
+   ìž¬í™ìƒ˜ ë¸”ë¡œê·¸ - íŒŒìŠ¤í…” ê·¸ë¼ë°ì´ì…˜ í…Œë§ˆ
    =================================================== */
 
 :root {
@@ -63,7 +63,7 @@ img {
     padding: 0 24px;
 }
 
-/* === 헤더 === */
+/* === í—¤ë” === */
 .header {
     position: fixed;
     top: 0;
@@ -140,7 +140,7 @@ img {
     transition: 0.3s;
 }
 
-/* === 히어로 === */
+/* === ížˆì–´ë¡œ === */
 .hero {
     position: relative;
     height: 100vh;
@@ -254,7 +254,19 @@ img {
     color: var(--white);
 }
 
-/* === 섹션 공통 === */
+.btn-chatbot {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: var(--white);
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+
+.btn-chatbot:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+}
+
+/* === ì„¹ì…˜ ê³µí†µ === */
 .section-header {
     text-align: center;
     margin-bottom: 48px;
@@ -280,7 +292,7 @@ img {
     text-align: center;
 }
 
-/* === 블로그 섹션 === */
+/* === ë¸”ë¡œê·¸ ì„¹ì…˜ === */
 .blog-section {
     padding: 100px 0;
     background: var(--gray-50);
@@ -337,7 +349,7 @@ img {
     border-radius: 20px;
 }
 
-/* 카테고리별 색상 */
+/* ì¹´í…Œê³ ë¦¬ë³„ ìƒ‰ìƒ */
 .blog-card-category.cat-it {
     background: #3b82f6;
 }
@@ -390,7 +402,7 @@ img {
     overflow: hidden;
 }
 
-/* === 소개 섹션 === */
+/* === ì†Œê°œ ì„¹ì…˜ === */
 .about-section {
     padding: 100px 0;
     background: var(--white);
@@ -429,7 +441,7 @@ img {
     line-height: 1.8;
 }
 
-/* === 특징 그리드 === */
+/* === íŠ¹ì§• ê·¸ë¦¬ë“œ === */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -471,7 +483,7 @@ img {
     line-height: 1.6;
 }
 
-/* === 학과 그리드 (사용 안함) === */
+/* === í•™ê³¼ ê·¸ë¦¬ë“œ (ì‚¬ìš© ì•ˆí•¨) === */
 .departments-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -524,7 +536,7 @@ img {
     line-height: 1.5;
 }
 
-/* === 푸터 === */
+/* === í‘¸í„° === */
 .footer {
     background: var(--gray-900);
     color: var(--white);
@@ -583,7 +595,7 @@ img {
     color: var(--gray-500);
 }
 
-/* === 반응형 === */
+/* === ë°˜ì‘í˜• === */
 @media (max-width: 1024px) {
     .features-grid,
     .departments-grid {
@@ -654,7 +666,7 @@ img {
     }
 }
 
-/* === 애니메이션 === */
+/* === ì• ë‹ˆë©”ì´ì…˜ === */
 .fade-in {
     opacity: 0;
     transform: translateY(20px);
@@ -666,7 +678,7 @@ img {
     transform: translateY(0);
 }
 
-/* === 블로그 더보기 버튼 === */
+/* === ë¸”ë¡œê·¸ ë”ë³´ê¸° ë²„íŠ¼ === */
 .blog-more {
     text-align: center;
     margin-top: 48px;
@@ -699,7 +711,7 @@ img {
     transform: translateX(4px);
 }
 
-/* === 블로그 페이지 === */
+/* === ë¸”ë¡œê·¸ íŽ˜ì´ì§€ === */
 .page-hero {
     padding: 140px 0 60px;
     background: var(--gradient-pastel);
@@ -760,7 +772,7 @@ img {
     color: var(--gray-500);
 }
 
-/* === 페이지네이션 === */
+/* === íŽ˜ì´ì§€ë„¤ì´ì…˜ === */
 .pagination {
     display: flex;
     justify-content: center;
@@ -806,7 +818,7 @@ img {
     background: var(--gray-100);
 }
 
-/* === 포스트 상세 페이지 === */
+/* === í¬ìŠ¤íŠ¸ ìƒì„¸ íŽ˜ì´ì§€ === */
 .post-detail {
     min-height: 100vh;
 }
@@ -971,14 +983,14 @@ img {
     margin-bottom: 24px;
 }
 
-/* === 블로그 카드 링크 스타일 === */
+/* === ë¸”ë¡œê·¸ ì¹´ë“œ ë§í¬ ìŠ¤íƒ€ì¼ === */
 a.blog-card {
     display: block;
     text-decoration: none;
     color: inherit;
 }
 
-/* === AI 자동 생성 문구 스타일 === */
+/* === AI ìžë™ ìƒì„± ë¬¸êµ¬ ìŠ¤íƒ€ì¼ === */
 .ai-disclaimer {
     margin-top: 40px;
     padding: 16px 20px;
