@@ -254,18 +254,6 @@ img {
     color: var(--white);
 }
 
-.btn-chatbot {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    color: var(--white);
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
-}
-
-.btn-chatbot:hover {
-    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
-}
-
 /* === ì„¹ì…˜ ê³µí†µ === */
 .section-header {
     text-align: center;
