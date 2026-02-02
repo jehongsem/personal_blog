@@ -14,14 +14,14 @@
         "style": "primary"
       },
       {
-        "text": "소개",
-        "url": "#about",
+        "text": "AI 챗봇",
+        "url": "https://blog-ai-chat.streamlit.app",
         "style": "secondary"
       },
       {
-        "text": "블로그 AI 챗봇",
-        "url": "https://test-blog-ai.streamlit.app/",
-        "style": "chatbot"
+        "text": "소개",
+        "url": "#about",
+        "style": "secondary"
       }
     ]
   },

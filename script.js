@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // === 메인 콘텐츠 로드 ===
 async function loadContent() {
     try {
-        const response = await fetch('content.json');
+        const timestamp = new Date().getTime();
+        const response = await fetch(`content.json?v=${timestamp}`);
         const content = await response.json();
         
         // 히어로 섹션
@@ -49,11 +50,13 @@ function renderHero(hero) {
     }
     
     const buttonsContainer = document.getElementById('hero-buttons');
-    buttonsContainer.innerHTML = hero.buttons.map(btn => `
-        <a href="${btn.url}" class="btn btn-${btn.style}" target="${btn.url.startsWith('http') ? '_blank' : '_self'}">
+    buttonsContainer.innerHTML = hero.buttons.map(btn => {
+        const isExternal = btn.url.startsWith('http');
+        return `
+        <a href="${btn.url}" class="btn btn-${btn.style}" target="${isExternal ? '_blank' : '_self'}" rel="${isExternal ? 'noopener noreferrer' : ''}">
             ${btn.text}
         </a>
-    `).join('');
+    `}).join('');
 }
 
 // === 학교소개 렌더링 ===
