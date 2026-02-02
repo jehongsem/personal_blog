@@ -9,6 +9,11 @@
     "title": "재홍샘 블로그",
     "buttons": [
       {
+        "text": "소개",
+        "url": "#about",
+        "style": "secondary"
+      },
+      {
         "text": "블로그 보기",
         "url": "blog.html",
         "style": "primary"
@@ -16,11 +21,6 @@
       {
         "text": "AI 챗봇",
         "url": "https://blog-ai-chat.streamlit.app",
-        "style": "secondary"
-      },
-      {
-        "text": "소개",
-        "url": "#about",
         "style": "secondary"
       }
     ]
