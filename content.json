@@ -9,13 +9,13 @@
     "title": "재홍샘 블로그",
     "buttons": [
       {
-        "text": "블로그 보기",
-        "url": "blog.html",
+        "text": "소개",
+        "url": "#about",
         "style": "secondary"
       },
       {
-        "text": "소개",
-        "url": "#about",
+        "text": "블로그",
+        "url": "blog.html",
         "style": "secondary"
       },
       {

@@ -101,8 +101,10 @@ function renderAbout(about) {
 // === 블로그 포스트 로드 ===
 async function loadPosts() {
     try {
+        // 캐시 무효화를 위한 타임스탬프 추가
+        const timestamp = new Date().getTime();
         // index.json에서 포스트 목록 가져오기
-        const indexResponse = await fetch('posts/index.json');
+        const indexResponse = await fetch(`posts/index.json?t=${timestamp}`);
         const postList = await indexResponse.json();
         
         // 최신 6개만 로드
@@ -110,7 +112,7 @@ async function loadPosts() {
         
         const posts = await Promise.all(
             recentPostFiles.map(file => 
-                fetch(`posts/${file}`)
+                fetch(`posts/${file}?t=${timestamp}`)
                     .then(res => res.json())
                     .catch(() => null)
             )

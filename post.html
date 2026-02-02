@@ -19,8 +19,9 @@
             </a>
             <nav class="nav">
                 <a href="index.html" class="nav-link">홈</a>
-                <a href="blog.html" class="nav-link active">블로그</a>
                 <a href="index.html#about" class="nav-link">소개</a>
+                <a href="blog.html" class="nav-link active">블로그</a>
+                <a href="https://blog-ai-chat.streamlit.app" class="nav-link" target="_blank">AI 챗봇</a>
             </nav>
             <button class="mobile-menu" aria-label="메뉴">
                 <span></span>
@@ -59,8 +60,9 @@
                 </div>
                 <div class="footer-links">
                     <a href="index.html">홈</a>
-                    <a href="blog.html">블로그</a>
                     <a href="index.html#about">소개</a>
+                    <a href="blog.html">블로그</a>
+                    <a href="https://blog-ai-chat.streamlit.app" target="_blank">AI 챗봇</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -83,7 +85,9 @@
 
         async function loadPost(id) {
             try {
-                const response = await fetch(`posts/${id}.json`);
+                // 캐시 무효화를 위한 타임스탬프 추가
+                const timestamp = new Date().getTime();
+                const response = await fetch(`posts/${id}.json?t=${timestamp}`);
                 if (!response.ok) throw new Error('Post not found');
                 const post = await response.json();
                 renderPost(post);
