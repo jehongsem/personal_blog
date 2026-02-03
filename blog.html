@@ -255,6 +255,21 @@
                 day: 'numeric'
             });
         }
+
+        // 모바일 메뉴
+        function initMobileMenu() {
+            const toggle = document.querySelector('.mobile-menu');
+            const nav = document.querySelector('.nav');
+            
+            if (toggle && nav) {
+                toggle.addEventListener('click', () => {
+                    nav.classList.toggle('active');
+                });
+            }
+        }
+
+        // 모바일 메뉴 초기화
+        initMobileMenu();
     </script>
 </body>
 </html>

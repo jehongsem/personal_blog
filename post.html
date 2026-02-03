@@ -125,6 +125,15 @@
             // 본문 내용
             document.getElementById('post-content').innerHTML = post.content;
         }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
     </script>
 </body>
 </html>
