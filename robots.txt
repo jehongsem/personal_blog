@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jehongsem.github.io/personal_blog/sitemap.xml
