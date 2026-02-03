@@ -89,7 +89,6 @@
         </div>
     </footer>
 
-    <script src="script.js?v=20260203"></script>
     <script>
         const POSTS_PER_PAGE = 6;
         let allPosts = [];
@@ -245,6 +244,15 @@
                     
                     renderPage(1);
                 });
+            });
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
         }
     </script>
