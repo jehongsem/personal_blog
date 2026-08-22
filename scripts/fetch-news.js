@@ -148,6 +148,23 @@ function selectBestNews(newsItems) {
   return scored[0];
 }
 
+// Claude API 응답에서 텍스트만 안전하게 추출
+// content 배열에는 thinking 등 text가 아닌 블록이 섞일 수 있으므로
+// 인덱스([0])로 찍지 않고 type === 'text'인 블록만 골라낸다.
+function extractTextFromClaudeResponse(responseData) {
+  const blocks = (responseData && responseData.content) || [];
+
+  if (!Array.isArray(blocks) || blocks.length === 0) {
+    return '';
+  }
+
+  return blocks
+    .filter(block => block && block.type === 'text' && typeof block.text === 'string')
+    .map(block => block.text)
+    .join('\n')
+    .trim();
+}
+
 // Claude API를 이용한 블로그 포스트 생성
 async function generateBlogPostWithClaude(selectedNews, allNews, category, photoCredit) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -193,10 +210,16 @@ ${relatedNews}
 5. 원문 뉴스 링크를 본문 중간이나 끝에 자연스럽게 포함해주세요.
 6. 친근하지만 전문적인 문체로 작성해주세요.
 7. HTML 형식으로 작성해주세요 (h2, h3, p, a, blockquote 태그 사용).
-8. 전체 길이는 800~1200자 정도로 작성해주세요.
+8. 전체 길이는 1500~2000자 정도로 작성해주세요.
+
+## 글쓰기 주의사항
+- "~에 대해 알아보겠습니다", "오늘은 ~를 소개합니다" 같은 상투적인 서두는 쓰지 마세요.
+- 뉴스 내용을 그대로 요약만 하지 말고, 왜 중요한지 해석과 관점을 담아주세요.
+- 가능하면 구체적인 숫자, 사례, 비교를 포함하세요.
+- 뻔한 마무리 대신, 독자가 당장 생각해볼 만한 질문이나 실천 포인트로 끝내주세요.
 
 ## 출력 형식
-아래 JSON 형식으로만 출력하세요. 다른 설명은 하지 마세요.
+아래 JSON 형식으로만 출력하세요. 다른 설명이나 마크다운 코드블록(\`\`\`)은 절대 붙이지 마세요.
 
 {
   "title": "포스트 제목 (흥미롭고 클릭하고 싶은 제목)",
@@ -206,7 +229,7 @@ ${relatedNews}
 
     const response = await axios.post('https://api.anthropic.com/v1/messages', {
       model: 'claude-sonnet-5',
-      max_tokens: 3000,
+      max_tokens: 8000,
       messages: [{
         role: 'user',
         content: prompt
@@ -217,10 +240,20 @@ ${relatedNews}
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      timeout: 60000
+      timeout: 120000
     });
 
-    const responseText = response.data.content[0].text;
+    const responseText = extractTextFromClaudeResponse(response.data);
+
+    if (!responseText) {
+      console.error('Claude 응답에서 텍스트를 찾지 못했습니다. 기본 포맷 사용.');
+      console.error('응답 블록 타입:', JSON.stringify(
+        ((response.data && response.data.content) || []).map(b => b && b.type)
+      ));
+      return generateBasicPost(selectedNews, allNews, category, photoCredit);
+    }
+
+    console.log(`Claude 응답 수신 완료 (${responseText.length}자)`);
 
     try {
       let jsonStr = responseText;
@@ -236,6 +269,8 @@ ${relatedNews}
         creditHtml = `\n\n<p class="photo-credit">📷 Photo by <a href="${photoCredit.photographerUrl}" target="_blank">${photoCredit.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a></p>`;
       }
 
+      console.log('Claude 포스트 생성 성공');
+
       return {
         title: parsed.title || selectedNews.title,
         excerpt: parsed.excerpt || `${category} 분야의 최신 소식을 분석합니다.`,
@@ -245,10 +280,15 @@ ${relatedNews}
       };
     } catch (parseError) {
       console.error('JSON 파싱 실패, 기본 포맷 사용:', parseError.message);
+      console.error('응답 앞부분 300자:', responseText.slice(0, 300));
       return generateBasicPost(selectedNews, allNews, category, photoCredit);
     }
   } catch (error) {
     console.error('Claude API 호출 실패:', error.message);
+    if (error.response) {
+      console.error('상태 코드:', error.response.status);
+      console.error('응답 내용:', JSON.stringify(error.response.data));
+    }
     return generateBasicPost(selectedNews, allNews, category, photoCredit);
   }
 }
@@ -346,7 +386,7 @@ async function main() {
   console.log('=== 일일 블로그 포스트 자동 생성 시작 ===');
   console.log(`실행 시간: ${new Date().toISOString()}`);
 
-  
+
   const category = getTodayCategory();
   const searchQuery = getRandomQuery(category);
   console.log(`\n오늘의 카테고리: ${category}`);
@@ -380,7 +420,7 @@ async function main() {
 
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
-  const timeStr = today.toTimeString().split(' ')[0].replace(/:/g, '-'); 
+  const timeStr = today.toTimeString().split(' ')[0].replace(/:/g, '-');
   const postId = `daily-${dateStr}-${timeStr}`;
   const filename = `${postId}.json`;
 
