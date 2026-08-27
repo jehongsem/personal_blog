@@ -2,42 +2,57 @@ name: 매일 자동 블로그 포스팅
 
 on:
   schedule:
-    # 매일 한국시간 오전 8시에 실행 (UTC 23:00, 전날)
     - cron: '0 23 * * *'
-  workflow_dispatch: # 수동 실행도 가능
+    - cron: '30 0 * * *'
+  workflow_dispatch:
 
 jobs:
   generate-daily-post:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 20
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
+
+      - name: 최근 포스트 여부 확인
+        id: check
+        run: |
+          LAST=$(git log -1 --format=%ct -- posts || echo 0)
+          NOW=$(date +%s)
+          DIFF=$(( (NOW - LAST) / 3600 ))
+          if [ "$DIFF" -lt 12 ]; then
+            echo "12시간 내 포스트 존재 - 건너뜀"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install dependencies
-        run: |
-          npm install axios cheerio
+        if: steps.check.outputs.skip == 'false'
+        run: npm install axios cheerio
 
       - name: Fetch news and create post
+        if: steps.check.outputs.skip == 'false'
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node scripts/fetch-news.js
 
       - name: Commit and push if changed
+        if: steps.check.outputs.skip == 'false'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git diff --staged --quiet || git commit -m "✍️ 오늘의 포스트: $(date +'%Y-%m-%d')"
+          git diff --staged --quiet || git commit -m "오늘의 포스트: $(date +'%Y-%m-%d')"
           git pull --rebase origin main
           git push
-
     
