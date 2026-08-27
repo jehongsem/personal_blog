@@ -401,20 +401,39 @@
                 
                 const files = await res.json();
                 posts = [];
-                
-                for (const file of files) {
-                    if (file.name.endsWith('.json') && file.name !== 'index.json') {
-                        const postFile = await getFile(`posts/${file.name}`);
-                        if (postFile) {
-                            posts.push({
-                                filename: file.name,
-                                sha: postFile.sha,
-                                ...postFile.content
-                            });
-                        }
+
+                // 목록에 표시할 포스트 파일만 추림
+                const targetFiles = files.filter(
+                    f => f.name.endsWith('.json') && f.name !== 'index.json'
+                );
+
+                // 30개씩 묶어 병렬로 요청 (순차 처리 대비 대폭 단축)
+                const CHUNK_SIZE = 30;
+                let loaded = 0;
+
+                for (let i = 0; i < targetFiles.length; i += CHUNK_SIZE) {
+                    const chunk = targetFiles.slice(i, i + CHUNK_SIZE);
+
+                    const results = await Promise.all(
+                        chunk.map(file =>
+                            getFile(`posts/${file.name}`)
+                                .then(postFile => (postFile ? {
+                                    filename: file.name,
+                                    sha: postFile.sha,
+                                    ...postFile.content
+                                } : null))
+                                .catch(() => null)
+                        )
+                    );
+
+                    for (const item of results) {
+                        if (item) posts.push(item);
                     }
+
+                    loaded += chunk.length;
+                    tbody.innerHTML = `<tr><td colspan="4" class="loading">로딩 중... (${Math.min(loaded, targetFiles.length)}/${targetFiles.length})</td></tr>`;
                 }
-                
+
                 // 날짜순 정렬
                 posts.sort((a, b) => new Date(b.date) - new Date(a.date));
                 renderPosts();
