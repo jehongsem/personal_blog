@@ -165,27 +165,59 @@ function extractTextFromClaudeResponse(responseData) {
     .trim();
 }
 
-// Claude API를 이용한 블로그 포스트 생성
+// 대기 함수 (재시도 백오프용)
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 태그 기반 응답에서 값 추출
+function extractTag(text, tag) {
+  const re = new RegExp('<' + tag + '>([\\s\\S]*?)<\\/' + tag + '>');
+  const m = text.match(re);
+  return m ? m[1].trim() : '';
+}
+
+// Claude API 1회 호출
+async function callClaude(apiKey, prompt) {
+  const response = await axios.post('https://api.anthropic.com/v1/messages', {
+    model: 'claude-sonnet-5',
+    max_tokens: 12000,
+    messages: [{
+      role: 'user',
+      content: prompt
+    }]
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    timeout: 180000
+  });
+
+  return response.data;
+}
+
+// Claude API를 이용한 블로그 포스트 생성 (최대 3회 재시도)
 async function generateBlogPostWithClaude(selectedNews, allNews, category, photoCredit) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.log('ANTHROPIC_API_KEY가 설정되지 않았습니다. 기본 포맷으로 생성합니다.');
-    return generateBasicPost(selectedNews, allNews, category, photoCredit);
+    console.error('ANTHROPIC_API_KEY가 설정되지 않았습니다.');
+    return null;
   }
 
-  try {
-    const relatedNews = allNews.slice(0, 5).map((item, i) =>
-      `${i + 1}. ${item.title} (${item.source})\n   ${item.link}`
-    ).join('\n');
+  const relatedNews = allNews.slice(0, 5).map((item, i) =>
+    `${i + 1}. ${item.title} (${item.source})\n   ${item.link}`
+  ).join('\n');
 
-    const currentDate = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const currentDate = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
-    const prompt = `당신은 IT/AI/교육 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
+  const prompt = `당신은 IT/AI/교육/경영 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
 
 ## 중요: 현재 날짜
 오늘은 ${currentDate}입니다.
@@ -217,80 +249,81 @@ ${relatedNews}
 - 뉴스 내용을 그대로 요약만 하지 말고, 왜 중요한지 해석과 관점을 담아주세요.
 - 가능하면 구체적인 숫자, 사례, 비교를 포함하세요.
 - 뻔한 마무리 대신, 독자가 당장 생각해볼 만한 질문이나 실천 포인트로 끝내주세요.
+- 제목에 이모지를 넣지 마세요.
 
 ## 출력 형식
-아래 JSON 형식으로만 출력하세요. 다른 설명이나 마크다운 코드블록(\`\`\`)은 절대 붙이지 마세요.
+반드시 아래 세 개의 태그로만 출력하세요. 태그 밖에는 어떤 설명도 쓰지 마세요.
+마크다운 코드블록도 쓰지 마세요.
 
-{
-  "title": "포스트 제목 (흥미롭고 클릭하고 싶은 제목)",
-  "excerpt": "포스트 요약 (1~2문장)",
-  "content": "<h2>...</h2><p>...</p>..."
-}`;
+<title>포스트 제목 (흥미롭고 클릭하고 싶은 제목)</title>
+<excerpt>포스트 요약 (1~2문장)</excerpt>
+<post><h2>...</h2><p>...</p>...</post>`;
 
-    const response = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: 'claude-sonnet-5',
-      max_tokens: 8000,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      timeout: 120000
-    });
+  const MAX_ATTEMPTS = 3;
 
-    const responseText = extractTextFromClaudeResponse(response.data);
-
-    if (!responseText) {
-      console.error('Claude 응답에서 텍스트를 찾지 못했습니다. 기본 포맷 사용.');
-      console.error('응답 블록 타입:', JSON.stringify(
-        ((response.data && response.data.content) || []).map(b => b && b.type)
-      ));
-      return generateBasicPost(selectedNews, allNews, category, photoCredit);
-    }
-
-    console.log(`Claude 응답 수신 완료 (${responseText.length}자)`);
-
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      let jsonStr = responseText;
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
+      console.log(`Claude 호출 시도 ${attempt}/${MAX_ATTEMPTS}...`);
+
+      const data = await callClaude(apiKey, prompt);
+      const responseText = extractTextFromClaudeResponse(data);
+
+      if (data.stop_reason === 'max_tokens') {
+        throw new Error('응답이 max_tokens에서 잘렸습니다.');
       }
 
-      const parsed = JSON.parse(jsonStr);
+      if (!responseText) {
+        throw new Error(
+          '텍스트 블록 없음. 블록 타입: ' +
+          JSON.stringify(((data && data.content) || []).map(b => b && b.type))
+        );
+      }
+
+      const title = extractTag(responseText, 'title');
+      const excerpt = extractTag(responseText, 'excerpt');
+      const content = extractTag(responseText, 'post');
+
+      if (!title || !content) {
+        throw new Error(`태그 추출 실패 (title=${title.length}자, post=${content.length}자)`);
+      }
+
+      if (content.length < 800) {
+        throw new Error(`본문이 너무 짧습니다 (${content.length}자)`);
+      }
 
       let creditHtml = '';
       if (photoCredit) {
         creditHtml = `\n\n<p class="photo-credit">📷 Photo by <a href="${photoCredit.photographerUrl}" target="_blank">${photoCredit.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a></p>`;
       }
 
-      console.log('Claude 포스트 생성 성공');
+      console.log(`Claude 포스트 생성 성공 (본문 ${content.length}자)`);
 
       return {
-        title: parsed.title || selectedNews.title,
-        excerpt: parsed.excerpt || `${category} 분야의 최신 소식을 분석합니다.`,
-        content: (parsed.content || generateBasicPost(selectedNews, allNews, category, photoCredit).content) +
+        title: title,
+        excerpt: excerpt || `${category} 분야의 최신 소식을 분석합니다.`,
+        content: content +
           creditHtml +
           '\n\n<p class="ai-disclaimer">🤖 <em>이 포스팅은 AI가 자동으로 작성한 포스팅입니다.</em></p>'
       };
-    } catch (parseError) {
-      console.error('JSON 파싱 실패, 기본 포맷 사용:', parseError.message);
-      console.error('응답 앞부분 300자:', responseText.slice(0, 300));
-      return generateBasicPost(selectedNews, allNews, category, photoCredit);
+
+    } catch (error) {
+      console.error(`시도 ${attempt} 실패:`, error.message);
+
+      if (error.response) {
+        console.error('상태 코드:', error.response.status);
+        console.error('응답 내용:', JSON.stringify(error.response.data).slice(0, 500));
+      }
+
+      if (attempt < MAX_ATTEMPTS) {
+        const waitMs = attempt * 15000;
+        console.log(`${waitMs / 1000}초 후 재시도합니다...`);
+        await sleep(waitMs);
+      }
     }
-  } catch (error) {
-    console.error('Claude API 호출 실패:', error.message);
-    if (error.response) {
-      console.error('상태 코드:', error.response.status);
-      console.error('응답 내용:', JSON.stringify(error.response.data));
-    }
-    return generateBasicPost(selectedNews, allNews, category, photoCredit);
   }
+
+  console.error('Claude 포스트 생성에 3회 모두 실패했습니다.');
+  return null;
 }
 
 // Claude API 없을 때 기본 포스트 생성
@@ -418,6 +451,11 @@ async function main() {
   console.log('\n블로그 포스트 생성 중...');
   const postData = await generateBlogPostWithClaude(selectedNews, news, category, pexelsResult);
 
+  // 품질 미달(폴백) 글은 발행하지 않고 워크플로를 실패시킨다
+  if (!postData) {
+    throw new Error('Claude 포스트 생성 실패 - 오늘 포스트를 발행하지 않습니다.');
+  }
+
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
   const timeStr = today.toTimeString().split(' ')[0].replace(/:/g, '-');
@@ -458,4 +496,7 @@ async function main() {
   console.log('\n=== 자동 포스팅 완료 ===');
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error(err.message);
+  process.exit(1);
+});
