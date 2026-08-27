@@ -22,32 +22,39 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 최근 포스트 여부 확인
+      - name: 오늘 포스트 존재 여부 확인
         id: check
         run: |
-          LAST=$(git log -1 --format=%ct -- posts || echo 0)
-          NOW=$(date +%s)
-          DIFF=$(( (NOW - LAST) / 3600 ))
-          if [ "$DIFF" -lt 12 ]; then
-            echo "12시간 내 포스트 존재 - 건너뜀"
+          echo "skip=false" >> $GITHUB_OUTPUT
+
+          # 수동 실행은 항상 생성한다
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "수동 실행 - 가드 건너뜀"
+            exit 0
+          fi
+
+          # 스케줄 실행일 때만 오늘 자동 포스트가 이미 있는지 확인
+          TODAY=$(date -u +'%Y-%m-%d')
+          if ls posts/daily-${TODAY}-*.json >/dev/null 2>&1; then
+            echo "오늘(${TODAY}) 포스트가 이미 있습니다 - 건너뜀"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "오늘(${TODAY}) 포스트 없음 - 생성 진행"
           fi
 
       - name: Install dependencies
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.skip != 'true'
         run: npm install axios cheerio
 
       - name: Fetch news and create post
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.skip != 'true'
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node scripts/fetch-news.js
 
       - name: Commit and push if changed
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.skip != 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -55,4 +62,3 @@ jobs:
           git diff --staged --quiet || git commit -m "오늘의 포스트: $(date +'%Y-%m-%d')"
           git pull --rebase origin main
           git push
-    
