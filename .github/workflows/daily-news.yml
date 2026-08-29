@@ -60,6 +60,23 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git diff --staged --quiet || git commit -m "오늘의 포스트: $(TZ=Asia/Seoul date +'%Y-%m-%d')"
-          git pull --rebase origin main
-          git push
+
+          if git diff --staged --quiet; then
+            echo "변경 사항 없음 - 종료"
+            exit 0
+          fi
+
+          git commit -m "오늘의 포스트: $(TZ=Asia/Seoul date +'%Y-%m-%d')"
+
+          # GitHub 측 일시적 오류(commit_refs 등)에 대비해 최대 5회 재시도
+          for i in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin main; then
+              echo "푸시 성공 (${i}회차)"
+              exit 0
+            fi
+            echo "푸시 실패 - ${i}회차, 20초 후 재시도"
+            sleep 20
+          done
+
+          echo "5회 재시도 후에도 푸시 실패 - 오늘 포스트가 발행되지 않았습니다."
+          exit 1
