@@ -11,6 +11,19 @@ const CONFIG = {
   categories: ['IT', 'AI', '교육', '경영']
 };
 
+// === KST(한국시간) 기준 날짜/시간 유틸 ===
+function kstNow() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000);
+}
+
+function kstDateStr() {
+  return kstNow().toISOString().split('T')[0];
+}
+
+function kstTimeStr() {
+  return kstNow().toISOString().split('T')[1].split('.')[0].replace(/:/g, '-');
+}
+
 // 카테고리별 검색 키워드
 const SEARCH_QUERIES = {
   'IT': ['IT 기술 트렌드', '소프트웨어 개발', '클라우드 컴퓨팅', '사이버보안', '스타트업 테크'],
@@ -120,8 +133,9 @@ async function fetchPexelsImage(category) {
 
 // 오늘의 카테고리 선택 (날짜 기반 로테이션)
 function getTodayCategory() {
-  const today = new Date();
-  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+  const today = kstNow();
+  const startOfYear = Date.UTC(today.getUTCFullYear(), 0, 0);
+  const dayOfYear = Math.floor((today.getTime() - startOfYear) / (1000 * 60 * 60 * 24));
   const categories = CONFIG.categories;
   return categories[dayOfYear % categories.length];
 }
@@ -212,6 +226,7 @@ async function generateBlogPostWithClaude(selectedNews, allNews, category, photo
   ).join('\n');
 
   const currentDate = new Date().toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -378,7 +393,7 @@ ${creditHtml}
 
 // 오늘 날짜로 이미 포스트가 있는지 확인
 function hasPostForToday() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = kstDateStr();
   const files = fs.readdirSync(CONFIG.postsDir);
 
   for (const file of files) {
@@ -417,7 +432,7 @@ function updatePostIndex(newPostFilename) {
 // 메인 함수
 async function main() {
   console.log('=== 일일 블로그 포스트 자동 생성 시작 ===');
-  console.log(`실행 시간: ${new Date().toISOString()}`);
+  console.log(`실행 시간(KST): ${kstDateStr()} ${kstTimeStr().replace(/-/g, ':')}`);
 
 
   const category = getTodayCategory();
@@ -456,9 +471,8 @@ async function main() {
     throw new Error('Claude 포스트 생성 실패 - 오늘 포스트를 발행하지 않습니다.');
   }
 
-  const today = new Date();
-  const dateStr = today.toISOString().split('T')[0];
-  const timeStr = today.toTimeString().split(' ')[0].replace(/:/g, '-');
+  const dateStr = kstDateStr();
+  const timeStr = kstTimeStr();
   const postId = `daily-${dateStr}-${timeStr}`;
   const filename = `${postId}.json`;
 
