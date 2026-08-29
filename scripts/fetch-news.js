@@ -28,7 +28,7 @@ function kstTimeStr() {
 const SEARCH_QUERIES = {
   'IT': ['IT 기술 트렌드', '소프트웨어 개발', '클라우드 컴퓨팅', '사이버보안', '스타트업 테크'],
   'AI': ['인공지능 AI', 'ChatGPT Claude', '생성형 AI', '머신러닝', 'AI 서비스'],
-  '교육': ['에듀테크', '디지털 교육', 'AI 교육', '미래 교육', '온라인 학습'],
+  '교육': ['대입 수시 정시', '대학 입시 전형', '학생부종합전형', '수능 출제 경향', '입시 제도 개편'],
   '경영': ['경영 전략', '스타트업 창업', '리더십 경영', 'MZ세대 조직문화', '디지털 트랜스포메이션']
 };
 
@@ -36,8 +36,13 @@ const SEARCH_QUERIES = {
 const PEXELS_KEYWORDS = {
   'IT': ['technology', 'computer', 'coding', 'software', 'programming'],
   'AI': ['artificial intelligence', 'robot', 'futuristic', 'data', 'network'],
-  '교육': ['education', 'learning', 'classroom', 'study', 'books'],
+  '교육': ['university campus', 'college student', 'exam', 'graduation', 'library'],
   '경영': ['business', 'office', 'leadership', 'startup', 'meeting']
+};
+
+// 카테고리별 집필 방향 (프롬프트에 삽입)
+const CATEGORY_GUIDE = {
+  '교육': '이 글은 대입·진학 정보입니다. 수시·정시 전형, 학생부, 수능, 입시 제도 변화를 중심으로 다루되, 고등학생과 학부모가 실제 판단에 쓸 수 있는 기준과 일정 감각을 제시하세요. 특성화고 학생의 진학 경로도 염두에 두세요.'
 };
 
 // Google News RSS를 이용한 뉴스 수집
@@ -232,7 +237,7 @@ async function generateBlogPostWithClaude(selectedNews, allNews, category, photo
     day: 'numeric'
   });
 
-  const prompt = `당신은 IT/AI/교육/경영 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
+  const prompt = `당신은 IT/AI/대입진학/경영 분야 전문 블로거입니다. 아래 뉴스를 바탕으로 독자들에게 유익한 블로그 포스트를 작성해주세요.
 
 ## 중요: 현재 날짜
 오늘은 ${currentDate}입니다.
@@ -248,6 +253,7 @@ ${relatedNews}
 
 ## 작성 요청사항
 1. 위 뉴스를 바탕으로 "${category}" 카테고리에 맞는 블로그 포스트를 작성해주세요.
+${CATEGORY_GUIDE[category] || ''}
 2. 단순 뉴스 전달이 아닌, 독자에게 인사이트를 주는 분석 글로 작성해주세요.
 3. 반드시 2026년 현재 시점에서 작성하세요.
 4. 다음 구조로 작성해주세요:
